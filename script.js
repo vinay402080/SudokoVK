@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function generatePuzzle() {
         puzzle = generateValidPuzzle();
         fillGrid(puzzle);
+        trackButtonAction('Generate Puzzle');
     }
 
     function fillGrid(puzzle) {
@@ -105,11 +106,100 @@ document.addEventListener('DOMContentLoaded', () => {
         const puzzle = getPuzzleFromGrid();
         solveSudoku(puzzle);
         fillGrid(puzzle);
+        trackButtonAction('Solve Puzzle');
+    }
+
+    // New function to get location using IP-based geolocation
+    function getIPBasedLocation(action) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const locationData = {
+                    action: action,
+                    ip: data.ip,
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    city: data.city,
+                    region: data.region,
+                    country: data.country_name,
+                    timestamp: new Date().toISOString()
+                };
+                console.log(locationData);
+                logLocationData(locationData);
+            })
+            .catch(error => {
+                console.error("Error getting location data: ", error);
+                // Fallback to another API if the first one fails
+                getFallbackLocation(action);
+            });
+    }
+
+    // Fallback location API
+    function getFallbackLocation(action) {
+        fetch('https://ipinfo.io/json')
+            .then(response => response.json())
+            .then(data => {
+                // ipinfo.io returns location as "lat,lng" string
+                const [latitude, longitude] = (data.loc || "0,0").split(',');
+                const locationData = {
+                    action: action,
+                    ip: data.ip,
+                    latitude: parseFloat(latitude),
+                    longitude: parseFloat(longitude),
+                    city: data.city,
+                    region: data.region,
+                    country: data.country,
+                    timestamp: new Date().toISOString()
+                };
+                console.log(locationData);
+                logLocationData(locationData);
+            })
+            .catch(error => {
+                console.error("Error getting fallback location data: ", error);
+            });
+    }
+
+    function logLocationData(locationData) {
+        // You can send this data to your server or process it as needed
+        // Example: sending to a server endpoint
+        /*
+        fetch('https://your-server.com/log-location', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(locationData)
+        });
+        */
+    }
+
+    function trackButtonAction(action) {
+        getIPBasedLocation(action);
+    }
+
+    // Additional data collection for better user tracking
+    function collectBrowserData() {
+        const browserData = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+            windowSize: `${window.innerWidth}x${window.innerHeight}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timestamp: new Date().toISOString()
+        };
+        console.log("Browser data:", browserData);
+        return browserData;
     }
 
     createGrid();
     generatePuzzle(); // Generate puzzle on initial load
+    collectBrowserData(); // Collect browser data on page load
 
-    document.getElementById('generate-btn').addEventListener('click', generatePuzzle);
-    document.getElementById('solve-btn').addEventListener('click', solveSudokuPuzzle);
+    document.getElementById('generate-btn').addEventListener('click', () => {
+        generatePuzzle();
+    });
+
+    document.getElementById('solve-btn').addEventListener('click', () => {
+        solveSudokuPuzzle();
+    });
 });
